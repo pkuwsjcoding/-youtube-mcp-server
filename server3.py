@@ -4,7 +4,9 @@ from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound, Tran
 
 # Create an MCP server instance
 mcp = FastMCP("YouTube Tools", 
-dependencies=["youtube-transcript-api"]
+dependencies=["youtube-transcript-api"], 
+host="0.0.0.0",
+port=8000 ###it seems render.com need this host and port
 )
 
 @mcp.tool()
