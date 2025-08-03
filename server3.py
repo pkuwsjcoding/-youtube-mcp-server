@@ -2,9 +2,11 @@ import re
 from mcp.server.fastmcp import FastMCP
 from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound, TranscriptsDisabled
 
+import os
+
 # Create an MCP server instance
 mcp = FastMCP("YouTube Tools", 
-dependencies=["youtube-transcript-api"], 
+dependencies=["youtube-transcript-api", "tavily-python"], 
 host="0.0.0.0",
 port=8000 ###it seems render.com need this host and port
 )
@@ -34,6 +36,40 @@ def get_youtube_video_id(youtube_url: str) -> str:
     else:
         # If no match, return an informative error message.
         return "Could not extract video ID. Please provide a valid YouTube URL."
+
+@mcp.tool()
+def web_search_with_tavily(query: str) -> str:
+    """
+    Searches the web using the Tavily API to get information based on a query.
+
+    Args:
+        query: The search query string.
+
+    Returns:
+        A summary of the search results or an error message.
+    """
+    try:
+        from tavily import TavilyClient
+        tavily_api_key = os.getenv("TAVILY_API_KEY")
+        if not tavily_api_key:
+            return "TAVILY_API_KEY environment variable not set. Please set it to use this tool."
+        
+        client = TavilyClient(api_key=tavily_api_key)
+        response = client.search(query=query, search_depth="basic")
+        
+        # Extract relevant information from the response
+        if response and response['results']:
+            # Concatenate snippet and title from each result
+            search_results = []
+            for r in response['results']:
+                search_results.append(f"Title: {r['title']}\nURL: {r['url']}\nSnippet: {r['content']}")
+            return "\n\n".join(search_results)
+        else:
+            return "No relevant results found for your query."
+    except ImportError:
+        return "tavily-python is not installed. Please install it using `uv pip install tavily-python`."
+    except Exception as e:
+        return f"An error occurred during web search: {e}"
 
 @mcp.tool()
 def get_youtube_transcript(video_id: str) -> str:
